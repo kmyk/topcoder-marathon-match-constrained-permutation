@@ -125,14 +125,13 @@ cerr << "elapsed: " << t * TLE << endl;
         delta -= binary_search(whole(constraints), p[x] < p[y] ? make_pair(x, y) : make_pair(y, x));
 // assert (satisfied + delta == compute_satisfied(p, constraints));
         if (delta >= 0 or bernoulli_distribution(exp(delta / temp))(gen)) {
-if (delta < 0)
-cerr << "prob: " << exp(delta / temp) << endl;
+// if (delta < 0) cerr << "prob: " << exp(delta / temp) << endl;
 forced += (delta < 0);
             satisfied += delta;
             if (best_satisfied < satisfied) {
                 best_satisfied = satisfied;
                 result = p;
-cerr << "score: " << satisfied /(double) k << endl;
+// cerr << "score: " << satisfied /(double) k << endl;
             }
         } else {
             swap(p[x], p[y]);
