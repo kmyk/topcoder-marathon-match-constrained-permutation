@@ -25,6 +25,6 @@ score: a.out tester/${PROBLEM}Vis.class
 
 WEBDRIVER := /usr/lib/chromium-browser/chromedriver
 submit/example:
-	oj --webdriver ${WEBDRIVER} s 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' -l C++ ${PROBLEM}.cpp --open
+	oj --webdriver ${WEBDRIVER} s -y 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' -l C++ ${PROBLEM}.cpp --open
 submit/full:
-	oj --webdriver ${WEBDRIVER} s 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' -l C++ ${PROBLEM}.cpp --open --full-submission
+	oj --webdriver ${WEBDRIVER} s -y 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' -l C++ ${PROBLEM}.cpp --open --full-submission
