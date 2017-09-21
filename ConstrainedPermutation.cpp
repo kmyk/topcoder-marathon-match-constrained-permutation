@@ -57,6 +57,12 @@ int compute_satisfied(vector<int> const & p, vector<pair<int, int> > const & con
     assert (satisfied % 2 == 0);
     return satisfied / 2;
 }
+int compute_satisfied_of(int i, vector<int> const & p, vector<vector<int> > const & lt, vector<vector<int> > const & gt) {
+    int satisfied = 0;
+    for (int j : lt[i]) satisfied += p[i] < p[j];
+    for (int j : gt[i]) satisfied += p[j] < p[i];
+    return satisfied;
+}
 
 double compute_score(vector<int> const & p, vector<pair<int, int> > const & constraints) {
     int k = constraints.size();
@@ -72,6 +78,18 @@ vector<int> ConstrainedPermutation::permute(int n, vector<string> constraints_st
         iss >> constraints[i].first >> constraints[i].second;
     }
     sort(whole(constraints));
+
+    // make graphs
+    vector<vector<int> > lt(n), gt(n);
+    for (auto constraint : constraints) {
+        int x, y; tie(x, y) = constraint;
+        lt[x].push_back(y);
+        gt[y].push_back(x);
+    }
+    repeat (i, n) {
+        sort(whole(lt[i]));
+        sort(whole(gt[i]));
+    }
 
     // solve
     vector<int> p(n);
@@ -98,12 +116,12 @@ cerr << "elapsed: " << t * TLE << endl;
         int y = uniform_int_distribution<int>(0, n - 1)(gen);
         if (x > y) swap(x, y);
         int delta = 0;
-        delta -= compute_satisfied_of(x, p, constraints);
-        delta -= compute_satisfied_of(y, p, constraints);
+        delta -= compute_satisfied_of(x, p, lt, gt);
+        delta -= compute_satisfied_of(y, p, lt, gt);
         delta += binary_search(whole(constraints), p[x] < p[y] ? make_pair(x, y) : make_pair(y, x));
         swap(p[x], p[y]);
-        delta += compute_satisfied_of(x, p, constraints);
-        delta += compute_satisfied_of(y, p, constraints);
+        delta += compute_satisfied_of(x, p, lt, gt);
+        delta += compute_satisfied_of(y, p, lt, gt);
         delta -= binary_search(whole(constraints), p[x] < p[y] ? make_pair(x, y) : make_pair(y, x));
 // assert (satisfied + delta == compute_satisfied(p, constraints));
         if (delta >= 0 or bernoulli_distribution(exp(delta / temp))(gen)) {
