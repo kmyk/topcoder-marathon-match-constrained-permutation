@@ -78,10 +78,11 @@ vector<int> ConstrainedPermutation::permute(int n, vector<string> constraints_st
     int satisfied = compute_satisfied(p, constraints);
     double clock_begin = rdtsc();
     for (int iteration = 0; ; ++ iteration) {
-        if (iteration % 10 == 0) {
-            if (rdtsc() - clock_begin > TLE * 0.98) {
-                break;
-            }
+        double clock_end = rdtsc();
+        if (clock_end - clock_begin > TLE * 0.95) {
+cerr << "iteration: " << iteration << endl;
+cerr << "elapsed: " << clock_end - clock_begin << endl;
+            break;
         }
         int x = uniform_int_distribution<int>(0, n - 1)(gen);
         int y = uniform_int_distribution<int>(0, n - 1)(gen);
@@ -105,7 +106,7 @@ vector<int> ConstrainedPermutation::permute(int n, vector<string> constraints_st
 // assert (rdtsc() - clock_begin < TLE);
 
     // output
-for (int p_i : p) cerr << p_i << ' '; cerr << endl;
-    cerr << "Score = " << compute_score(p, constraints) << endl;
+// cerr << "p: "; for (int p_i : p) cerr << p_i << ' '; cerr << endl;
+cerr << "score: " << compute_score(p, constraints) << endl;
     return p;
 }
