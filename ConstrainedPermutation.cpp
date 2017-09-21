@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <cmath>
 #include <numeric>
 #include <vector>
 #include <algorithm>
@@ -76,13 +77,22 @@ vector<int> ConstrainedPermutation::permute(int n, vector<string> constraints_st
     vector<int> p(n);
     iota(whole(p), 0);
     int satisfied = compute_satisfied(p, constraints);
+    int best_satisfied = satisfied;
+    vector<int> result = p;
     double clock_begin = rdtsc();
+    double t = 0;
+    double temp = INFINITY;
+int forced = 0;
     for (int iteration = 0; ; ++ iteration) {
-        double clock_end = rdtsc();
-        if (clock_end - clock_begin > TLE * 0.95) {
+        if (t > 0.9 or iteration % 10 == 0) {
+            t = (rdtsc() - clock_begin) / TLE;
+            if (t > 0.95) {
 cerr << "iteration: " << iteration << endl;
-cerr << "elapsed: " << clock_end - clock_begin << endl;
-            break;
+cerr << "forced: " << forced << endl;
+cerr << "elapsed: " << t * TLE << endl;
+                break;
+            }
+            temp = (1 - t);
         }
         int x = uniform_int_distribution<int>(0, n - 1)(gen);
         int y = uniform_int_distribution<int>(0, n - 1)(gen);
@@ -96,9 +106,16 @@ cerr << "elapsed: " << clock_end - clock_begin << endl;
         delta += compute_satisfied_of(y, p, constraints);
         delta -= binary_search(whole(constraints), p[x] < p[y] ? make_pair(x, y) : make_pair(y, x));
 // assert (satisfied + delta == compute_satisfied(p, constraints));
-        if (delta >= 0) {
+        if (delta >= 0 or bernoulli_distribution(exp(delta / temp))(gen)) {
+if (delta < 0)
+cerr << "prob: " << exp(delta / temp) << endl;
+forced += (delta < 0);
             satisfied += delta;
-// if (delta) cerr << "Score = " << satisfied /(double) k << endl;
+            if (best_satisfied < satisfied) {
+                best_satisfied = satisfied;
+                result = p;
+cerr << "score: " << satisfied /(double) k << endl;
+            }
         } else {
             swap(p[x], p[y]);
         }
@@ -107,6 +124,6 @@ cerr << "elapsed: " << clock_end - clock_begin << endl;
 
     // output
 // cerr << "p: "; for (int p_i : p) cerr << p_i << ' '; cerr << endl;
-cerr << "score: " << compute_score(p, constraints) << endl;
-    return p;
+cerr << "score: " << compute_score(result, constraints) << endl;
+    return result;
 }
