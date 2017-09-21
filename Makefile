@@ -22,3 +22,11 @@ visualize: a.out.visualize tester/${PROBLEM}Vis.class
 	cd tester ; java ${PROBLEM}Vis -exec ../a.out.visualize -seed ${SEED} -debug
 score: a.out tester/${PROBLEM}Vis.class
 	cd tester ; for seed in `seq 10` ; do java ${PROBLEM}Vis -exec ../a.out -seed $$seed | grep 'Score = ' ; done
+
+WEBDRIVER := /usr/lib/chromium-browser/chromedriver
+submit/example:
+	oj --webdriver ${WEBDRIVER} s 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' ${PROBLEM}.cpp -l C++
+	open 'https://community.topcoder.com/longcontest/?module=ViewStandings&rd=16997'
+submit/full:
+	oj --webdriver ${WEBDRIVER} s 'https://community.topcoder.com/tc?module=MatchDetails&rd=16997' ${PROBLEM}.cpp -l C++ --full-submission
+	open 'https://community.topcoder.com/longcontest/?module=ViewStandings&rd=16997'
