@@ -1,0 +1,13 @@
+$ make score SEED=114514
+g++ -std=c++11 -Wall -O2 -g -I. -DLOCAL tester/main.cpp
+cd tester ; for seed in `seq 10` ; do java ConstrainedPermutationVis -exec ../a.out -seed $seed | grep 'Score = ' ; done
+Score = 1.0
+Score = 0.8611111111111112
+Score = 0.8153014593877451
+Score = 0.8006061200952124
+Score = 0.8750110145391917
+Score = 0.8913043478260869
+Score = 0.7274909323661191
+Score = 0.7836354279833038
+Score = 0.8914877300613497
+Score = 0.8771947227457594
