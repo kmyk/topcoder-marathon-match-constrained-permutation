@@ -74,6 +74,12 @@ int lt[MAX_N + 1];
 int gt[MAX_N + 1];
 vector<pair<int, int> > constraints;
 
+int compute_satisfied_delta_of(int i, int from, int to) {
+    int satisfied = 0;
+    for (int16_t *j = graph + lt[i], *last = graph + lt[i + 1]; j != last; ++ j) satisfied += - (from < p[*j]) + (to < p[*j]);
+    for (int16_t *j = graph + gt[i], *last = graph + gt[i + 1]; j != last; ++ j) satisfied += - (from > p[*j]) + (to > p[*j]);
+    return satisfied;
+}
 int compute_satisfied_of(int i) {
     int satisfied = 0;
     int p_i = p[i];
@@ -151,25 +157,20 @@ cerr << "elapsed: " << t * TLE << endl;
         do {
             p_i = uniform_int_distribution<uint16_t>()(gen);
         } while (used[p_i]);
-        int delta = 0;
-        delta -= compute_satisfied_of(i);
-        int previous_p_i = p[i];
-        p[i] = p_i;
-        delta += compute_satisfied_of(i);
+        int delta = compute_satisfied_delta_of(i, p[i], p_i);
 // assert (satisfied + delta == compute_satisfied(p, constraints));
         if (delta >= 0 or bernoulli_distribution(exp(delta / temp))(gen)) {
 // if (delta < 0) cerr << "prob: " << exp(delta / temp) << endl;
 forced += (delta < 0);
             satisfied += delta;
-            used[previous_p_i] = false;
-            used[p[i]] = true;
-            if (best_satisfied < satisfied) {
+            used[p[i]] = false;
+            used[p_i] = true;
+            p[i] = p_i;
+            if (t > 0.7 and best_satisfied < satisfied) {
                 best_satisfied = satisfied;
                 copy(p, p + n, result);
 // cerr << "score: " << satisfied /(double) k << endl;
             }
-        } else {
-            p[i] = previous_p_i;
         }
     }
 // assert (rdtsc() - clock_begin < TLE);
