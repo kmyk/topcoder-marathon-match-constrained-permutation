@@ -64,38 +64,34 @@ constexpr int TLE = 10; // sec
 
 default_random_engine gen;
 
-int compute_satisfied_of(int i, vector<unsigned> const & p, vector<pair<int, int> > const & constraints) {
-    int n = p.size();
+constexpr int MAX_N = 1000;
+int n, k;
+uint16_t p[MAX_N];
+uint16_t result[MAX_N];
+bool used[1 << 16];
+vector<pair<int, int> > constraints;
+vector<vector<int16_t> > lt;
+vector<vector<int16_t> > gt;
+
+int compute_satisfied_of(int i) {
     int satisfied = 0;
-    repeat (j, n) {
-        satisfied += binary_search(whole(constraints), p[i] < p[j] ? make_pair(i, j) : make_pair(j, i));
-    }
+    for (int16_t j : lt[i]) satisfied += p[i] < p[j];
+    for (int16_t j : gt[i]) satisfied += p[i] > p[j];
     return satisfied;
 }
-int compute_satisfied(vector<unsigned> const & p, vector<pair<int, int> > const & constraints) {
-    int n = p.size();
+int compute_satisfied() {
     int satisfied = 0;
     repeat (i, n) {
-        satisfied += compute_satisfied_of(i, p, constraints);
+        satisfied += compute_satisfied_of(i);
     }
     assert (satisfied % 2 == 0);
     return satisfied / 2;
 }
-int compute_satisfied_of(int i, vector<unsigned> const & p, vector<vector<int> > const & lt, vector<vector<int> > const & gt) {
-    int satisfied = 0;
-    for (int j : lt[i]) satisfied += p[i] < p[j];
-    for (int j : gt[i]) satisfied += p[j] < p[i];
-    return satisfied;
-}
 
-double compute_score(vector<unsigned> const & p, vector<pair<int, int> > const & constraints) {
-    int k = constraints.size();
-    return compute_satisfied(p, constraints) /(double) k;
-}
-
-vector<unsigned> permute(int n, vector<pair<int, int> > const & constraints) {
+void permute() {
     // make graphs
-    vector<vector<int> > lt(n), gt(n);
+    lt.resize(n);
+    gt.resize(n);
     for (auto constraint : constraints) {
         int x, y; tie(x, y) = constraint;
         lt[x].push_back(y);
@@ -107,19 +103,17 @@ vector<unsigned> permute(int n, vector<pair<int, int> > const & constraints) {
     }
 
     // init
-    set<int> used;
-    vector<unsigned> p(n);
     repeat (i, n) {
-        while (used.count(p[i])) {
-            p[i] = uniform_int_distribution<unsigned>()(gen);
-        }
-        used.insert(p[i]);
+        do {
+            p[i] = uniform_int_distribution<uint16_t>()(gen);
+        } while (used[p[i]]);
+        used[p[i]] = true;
     }
-    int satisfied = compute_satisfied(p, constraints);
+    int satisfied = compute_satisfied();
 
     // simulated annealing
     int best_satisfied = satisfied;
-    vector<unsigned> result = p;
+    copy(p, p + n, result);
     double clock_begin = rdtsc();
     double t = 0;
     double temp = INFINITY;
@@ -133,28 +127,28 @@ cerr << "forced: " << forced << endl;
 cerr << "elapsed: " << t * TLE << endl;
                 break;
             }
-            temp = (1 - t);
+            temp = (1 - t) / 32;
         }
         int i = uniform_int_distribution<int>(0, n - 1)(gen);
-        int p_i = p[i];
-        while (used.count(p_i)) {
-            p_i = uniform_int_distribution<unsigned>()(gen);
-        }
+        int p_i;
+        do {
+            p_i = uniform_int_distribution<uint16_t>()(gen);
+        } while (used[p_i]);
         int delta = 0;
-        delta -= compute_satisfied_of(i, p, lt, gt);
+        delta -= compute_satisfied_of(i);
         int previous_p_i = p[i];
         p[i] = p_i;
-        delta += compute_satisfied_of(i, p, lt, gt);
+        delta += compute_satisfied_of(i);
 // assert (satisfied + delta == compute_satisfied(p, constraints));
         if (delta >= 0 or bernoulli_distribution(exp(delta / temp))(gen)) {
 // if (delta < 0) cerr << "prob: " << exp(delta / temp) << endl;
 forced += (delta < 0);
             satisfied += delta;
-            used.erase(previous_p_i);
-            used.insert(p[i]);
+            used[previous_p_i] = false;
+            used[p[i]] = true;
             if (best_satisfied < satisfied) {
                 best_satisfied = satisfied;
-                result = p;
+                copy(p, p + n, result);
 // cerr << "score: " << satisfied /(double) k << endl;
             }
         } else {
@@ -162,27 +156,24 @@ forced += (delta < 0);
         }
     }
 // assert (rdtsc() - clock_begin < TLE);
-
-    // output
-// cerr << "p: "; for (int p_i : p) cerr << p_i << ' '; cerr << endl;
-cerr << "score: " << compute_score(result, constraints) << endl;
-    return result;
+cerr << "score: " << best_satisfied /(double) k << endl;
 }
 
-vector<int> ConstrainedPermutation::permute(int n, vector<string> constraints_strings) {
+vector<int> ConstrainedPermutation::permute(int a_n, vector<string> constraints_strings) {
     // input
-    int k = constraints_strings.size();
-    vector<pair<int, int> > constraints(k);
+    n = a_n;
+    k = constraints_strings.size();
     repeat (i, k) {
         istringstream iss(constraints_strings[i]);
-        iss >> constraints[i].first >> constraints[i].second;
+        int x, y; iss >> x >> y;
+        constraints.emplace_back(x, y);
     }
     sort(whole(constraints));
 
     // solve
-    vector<unsigned> relaxed = ::permute(n, constraints);
+    ::permute();
 
     // output
-    vector<int> p = apply_compression(coordinate_compression_map(relaxed), relaxed);
-    return p;
+    vector<uint16_t> relaxed(result, result + n);
+    return apply_compression(coordinate_compression_map(relaxed), relaxed);
 }
