@@ -69,14 +69,16 @@ int n, k;
 uint16_t p[MAX_N];
 uint16_t result[MAX_N];
 bool used[1 << 16];
+int16_t graph[MAX_N * MAX_N];
+int lt[MAX_N + 1];
+int gt[MAX_N + 1];
 vector<pair<int, int> > constraints;
-vector<vector<int16_t> > lt;
-vector<vector<int16_t> > gt;
 
 int compute_satisfied_of(int i) {
     int satisfied = 0;
-    for (int16_t j : lt[i]) satisfied += p[i] < p[j];
-    for (int16_t j : gt[i]) satisfied += p[i] > p[j];
+    int p_i = p[i];
+    for (int16_t *j = graph + lt[i], *last = graph + lt[i + 1]; j != last; ++ j) satisfied += p_i < p[*j];
+    for (int16_t *j = graph + gt[i], *last = graph + gt[i + 1]; j != last; ++ j) satisfied += p_i > p[*j];
     return satisfied;
 }
 int compute_satisfied() {
@@ -89,17 +91,32 @@ int compute_satisfied() {
 }
 
 void permute() {
-    // make graphs
-    lt.resize(n);
-    gt.resize(n);
-    for (auto constraint : constraints) {
-        int x, y; tie(x, y) = constraint;
-        lt[x].push_back(y);
-        gt[y].push_back(x);
-    }
-    repeat (i, n) {
-        sort(whole(lt[i]));
-        sort(whole(gt[i]));
+    { // make graphs
+        int cnt = 0;
+
+        sort(whole(constraints));
+        int last_x = -1;
+        for (auto constraint : constraints) {
+            int x, y; tie(x, y) = constraint;
+            while (last_x < x) {
+                lt[++ last_x] = cnt;
+            }
+            graph[cnt ++] = y;
+        }
+        lt[++ last_x] = cnt;
+
+        sort(whole(constraints), [&](pair<int, int> a, pair<int, int> b) {
+            return make_pair(a.second, a.first) < make_pair(b.second, b.first);
+        });
+        int last_y = -1;
+        for (auto constraint : constraints) {
+            int x, y; tie(x, y) = constraint;
+            while (last_y < y) {
+                gt[++ last_y] = cnt;
+            }
+            graph[cnt ++] = x;
+        }
+        gt[++ last_y] = cnt;
     }
 
     // init
@@ -119,9 +136,9 @@ void permute() {
     double temp = INFINITY;
 int forced = 0;
     for (int iteration = 0; ; ++ iteration) {
-        if (t > 0.9 or iteration % 10 == 0) {
+        if (t > 0.9 or iteration % 1024 == 0) {
             t = (rdtsc() - clock_begin) / TLE;
-            if (t > 0.95) {
+            if (t > 0.97) {
 cerr << "iteration: " << iteration << endl;
 cerr << "forced: " << forced << endl;
 cerr << "elapsed: " << t * TLE << endl;
@@ -168,7 +185,6 @@ vector<int> ConstrainedPermutation::permute(int a_n, vector<string> constraints_
         int x, y; iss >> x >> y;
         constraints.emplace_back(x, y);
     }
-    sort(whole(constraints));
 
     // solve
     ::permute();
